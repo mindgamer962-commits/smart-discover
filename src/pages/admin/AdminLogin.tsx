@@ -1,45 +1,53 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShoppingBag, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react";
+import { ShoppingBag, Mail, Lock, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-
-// Unique admin credentials
-const ADMIN_EMAIL = "admin@shopsmart.app";
-const ADMIN_PASSWORD = "ShopSmart@2024";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, user, isAdmin, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in as admin
+  if (!authLoading && user && isAdmin) {
+    navigate("/admin");
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login delay
-    setTimeout(() => {
-      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        localStorage.setItem("adminAuthenticated", "true");
-        toast({
-          title: "Welcome back, Admin!",
-          description: "Successfully logged in to admin dashboard.",
-        });
-        navigate("/admin");
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive",
-        });
-      }
+    const { error } = await signIn(email, password);
+
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password.",
+        variant: "destructive",
+      });
       setIsLoading(false);
-    }, 1000);
+      return;
+    }
+
+    // Check if the user has admin role after login
+    toast({
+      title: "Checking admin access...",
+      description: "Verifying your permissions.",
+    });
+
+    // Small delay to allow role check to complete
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
   };
 
   return (
@@ -109,7 +117,14 @@ export default function AdminLogin() {
             className="w-full h-14 rounded-xl text-lg font-semibold shadow-glow"
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : "Sign In to Dashboard"}
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign In to Dashboard"
+            )}
           </Button>
 
           <div className="text-center pt-4">
@@ -123,7 +138,7 @@ export default function AdminLogin() {
           </div>
         </motion.form>
 
-        {/* Admin credentials hint */}
+        {/* Info */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -131,9 +146,8 @@ export default function AdminLogin() {
           className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/20"
         >
           <p className="text-sm text-center text-muted-foreground">
-            <strong className="text-foreground">Admin Credentials:</strong><br />
-            Email: <code className="text-primary">admin@shopsmart.app</code><br />
-            Password: <code className="text-primary">ShopSmart@2024</code>
+            <strong className="text-foreground">Need an admin account?</strong><br />
+            Contact the system administrator to get admin access.
           </p>
         </motion.div>
       </motion.div>
