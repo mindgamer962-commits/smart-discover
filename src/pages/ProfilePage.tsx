@@ -11,8 +11,6 @@ import {
   Sun, 
   ChevronRight, 
   LogOut,
-  Settings,
-  HelpCircle,
   Shield
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -25,8 +23,6 @@ export default function ProfilePage() {
   const menuItems = [
     { icon: Heart, label: "Wishlist", value: `${wishlist.length} items`, path: "/wishlist" },
     { icon: Clock, label: "Recently Viewed", value: "8 items", path: "#" },
-    { icon: Settings, label: "Settings", path: "#" },
-    { icon: HelpCircle, label: "Help & Support", path: "#" },
     { icon: Shield, label: "Privacy Policy", path: "#" },
   ];
 
