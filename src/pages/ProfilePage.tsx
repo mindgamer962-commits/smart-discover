@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { 
   User, 
@@ -11,20 +12,33 @@ import {
   Sun, 
   ChevronRight, 
   LogOut,
-  Shield
+  Shield,
+  LogIn
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { wishlist } = useWishlist();
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const menuItems = [
     { icon: Heart, label: "Wishlist", value: `${wishlist.length} items`, path: "/wishlist" },
     { icon: Clock, label: "Recently Viewed", value: "8 items", path: "#" },
     { icon: Shield, label: "Privacy Policy", path: "#" },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed Out",
+      description: "You have been signed out successfully.",
+    });
+    navigate("/home");
+  };
 
   return (
     <MobileLayout>
@@ -49,17 +63,31 @@ export default function ProfilePage() {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="w-8 h-8 text-primary" />
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Guest User</h2>
-              <p className="text-sm text-muted-foreground">Sign in to sync your data</p>
+            <div className="flex-1 min-w-0">
+              {user ? (
+                <>
+                  <h2 className="text-lg font-semibold text-foreground truncate">
+                    {user.user_metadata?.full_name || "User"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-semibold text-foreground">Welcome</h2>
+                  <p className="text-sm text-muted-foreground">Sign in to sync your data</p>
+                </>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => navigate("/login")}
-            className="w-full mt-4 py-3 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-colors"
-          >
-            Sign In
-          </button>
+          {!user && (
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full mt-4 py-3 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-5 h-5" />
+              Sign In
+            </button>
+          )}
         </motion.div>
 
         {/* Dark Mode Toggle */}
@@ -114,16 +142,19 @@ export default function ProfilePage() {
           ))}
         </motion.div>
 
-        {/* Logout Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="w-full mt-6 flex items-center justify-center gap-2 py-4 text-destructive font-medium"
-        >
-          <LogOut className="w-5 h-5" />
-          Sign Out
-        </motion.button>
+        {/* Logout Button - Only show if user is signed in */}
+        {user && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            onClick={handleSignOut}
+            className="w-full mt-6 flex items-center justify-center gap-2 py-4 text-destructive font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </motion.button>
+        )}
       </div>
     </MobileLayout>
   );
