@@ -5,8 +5,11 @@ import { SearchBar } from "@/components/ui/SearchBar";
 import { BannerSlider } from "@/components/ui/BannerSlider";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { CategoryCard } from "@/components/ui/CategoryCard";
-import { mockProducts, mockBanners, mockCategories } from "@/data/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { 
   Smartphone, 
@@ -17,7 +20,8 @@ import {
   BookOpen,
   Gamepad2,
   Car,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 
 const categoryIcons: Record<string, any> = {
@@ -33,11 +37,93 @@ const categoryIcons: Record<string, any> = {
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { toggleWishlist, isWishlisted } = useWishlist();
+  const { toggleWishlist, isWishlisted, isLoggedIn } = useWishlist();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const featuredProducts = mockProducts.slice(0, 4);
-  const trendingProducts = mockProducts.slice(2, 6);
+  // Fetch banners from database
+  const { data: banners = [] } = useQuery({
+    queryKey: ["banners"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data.map(b => ({
+        id: b.id,
+        title: b.title,
+        subtitle: b.subtitle || "",
+        image: b.image_url || "/placeholder.svg",
+        cta: b.cta_text || "Shop Now",
+        link: b.cta_url || "#"
+      }));
+    },
+  });
+
+  // Fetch categories from database
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("is_active", true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch featured products from database
+  const { data: featuredProducts = [], isLoading: featuredLoading } = useQuery({
+    queryKey: ["featured-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .eq("is_featured", true)
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch trending products (most clicked)
+  const { data: trendingProducts = [], isLoading: trendingLoading } = useQuery({
+    queryKey: ["trending-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("click_count", { ascending: false })
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleWishlistToggle = async (productId: string) => {
+    if (!isLoggedIn) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save items to your wishlist",
+        action: (
+          <button 
+            onClick={() => navigate("/login")}
+            className="bg-primary text-primary-foreground px-3 py-1 rounded text-sm"
+          >
+            Sign In
+          </button>
+        ),
+      });
+      return;
+    }
+    await toggleWishlist(productId);
+  };
 
   return (
     <MobileLayout>
@@ -50,7 +136,9 @@ export default function HomePage() {
         >
           <div>
             <h1 className="text-2xl font-bold text-foreground">Discover</h1>
-            <p className="text-sm text-muted-foreground">Find the best deals</p>
+            <p className="text-sm text-muted-foreground">
+              {user ? `Welcome back!` : "Find the best deals"}
+            </p>
           </div>
         </motion.div>
 
@@ -58,43 +146,48 @@ export default function HomePage() {
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
         {/* Banner Slider */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <BannerSlider banners={mockBanners} />
-        </motion.div>
+        {banners.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <BannerSlider banners={banners} />
+          </motion.div>
+        )}
 
         {/* Categories */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Categories</h2>
-            <button 
-              onClick={() => navigate("/categories")}
-              className="text-sm text-primary flex items-center gap-1"
-            >
-              See All <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {mockCategories.slice(0, 8).map((category) => {
-              const Icon = categoryIcons[category.id] || Smartphone;
-              return (
-                <CategoryCard
-                  key={category.id}
-                  icon={Icon}
-                  name={category.name}
-                  onClick={() => navigate(`/categories/${category.id}`)}
-                />
-              );
-            })}
-          </div>
-        </motion.section>
+        {categories.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Categories</h2>
+              <button 
+                onClick={() => navigate("/categories")}
+                className="text-sm text-primary flex items-center gap-1"
+              >
+                See All <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              {categories.slice(0, 8).map((category) => {
+                const iconKey = category.icon?.toLowerCase() || category.name.toLowerCase();
+                const Icon = categoryIcons[iconKey] || Smartphone;
+                return (
+                  <CategoryCard
+                    key={category.id}
+                    icon={Icon}
+                    name={category.name}
+                    onClick={() => navigate(`/categories/${category.id}`)}
+                  />
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
 
         {/* Featured Products */}
         <motion.section
@@ -108,17 +201,31 @@ export default function HomePage() {
               See All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {featuredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                isWishlisted={isWishlisted(product.id)}
-                onWishlistToggle={toggleWishlist}
-                onClick={() => navigate(`/product/${product.id}`)}
-              />
-            ))}
-          </div>
+          {featuredLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  title={product.title}
+                  price={Number(product.price)}
+                  originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                  discount={product.discount_percent || undefined}
+                  rating={product.rating ? Number(product.rating) : 0}
+                  image={product.image_url || "/placeholder.svg"}
+                  isWishlisted={isWishlisted(product.id)}
+                  onWishlistToggle={() => handleWishlistToggle(product.id)}
+                  onClick={() => navigate(`/product/${product.id}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">No featured products yet</p>
+          )}
         </motion.section>
 
         {/* Trending Today */}
@@ -133,17 +240,31 @@ export default function HomePage() {
               See All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {trendingProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                isWishlisted={isWishlisted(product.id)}
-                onWishlistToggle={toggleWishlist}
-                onClick={() => navigate(`/product/${product.id}`)}
-              />
-            ))}
-          </div>
+          {trendingLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : trendingProducts.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {trendingProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  title={product.title}
+                  price={Number(product.price)}
+                  originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                  discount={product.discount_percent || undefined}
+                  rating={product.rating ? Number(product.rating) : 0}
+                  image={product.image_url || "/placeholder.svg"}
+                  isWishlisted={isWishlisted(product.id)}
+                  onWishlistToggle={() => handleWishlistToggle(product.id)}
+                  onClick={() => navigate(`/product/${product.id}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">No trending products yet</p>
+          )}
         </motion.section>
       </div>
     </MobileLayout>
