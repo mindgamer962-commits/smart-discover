@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { CategoryCard } from "@/components/ui/CategoryCard";
-import { mockCategories } from "@/data/mockData";
 import { motion } from "framer-motion";
 import { 
   Smartphone, 
@@ -12,8 +11,12 @@ import {
   BookOpen,
   Gamepad2,
   Car,
-  ArrowLeft
+  ArrowLeft,
+  Loader2,
+  Package
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const categoryIcons: Record<string, any> = {
   electronics: Smartphone,
@@ -28,6 +31,24 @@ const categoryIcons: Record<string, any> = {
 
 export default function CategoriesPage() {
   const navigate = useNavigate();
+
+  // Fetch categories with product count
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ["categories-with-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select(`
+          *,
+          products:products(count)
+        `)
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   return (
     <MobileLayout>
@@ -48,31 +69,44 @@ export default function CategoriesPage() {
         </motion.div>
 
         {/* Categories Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-4"
-        >
-          {mockCategories.map((category, index) => {
-            const Icon = categoryIcons[category.id] || Smartphone;
-            return (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-              >
-                <CategoryCard
-                  icon={Icon}
-                  name={category.name}
-                  itemCount={category.itemCount}
-                  onClick={() => navigate(`/categories/${category.id}`)}
-                />
-              </motion.div>
-            );
-          })}
-        </motion.div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : categories && categories.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid grid-cols-2 gap-4"
+          >
+            {categories.map((category, index) => {
+              const iconKey = category.icon || category.name.toLowerCase();
+              const Icon = categoryIcons[iconKey] || Package;
+              const productCount = category.products?.[0]?.count || 0;
+              
+              return (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                >
+                  <CategoryCard
+                    icon={Icon}
+                    name={category.name}
+                    itemCount={productCount}
+                    onClick={() => navigate(`/category/${category.id}`)}
+                  />
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            No categories available
+          </div>
+        )}
       </div>
     </MobileLayout>
   );
