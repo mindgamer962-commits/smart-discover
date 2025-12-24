@@ -1,54 +1,98 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShoppingBag, Mail, Lock, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
+import { ShoppingBag, Mail, Lock, Eye, EyeOff, Shield, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
+const ADMIN_EMAIL = "adssma@smart.com";
+
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, user, isAdmin, isLoading: authLoading } = useAuth();
+  const { signIn, signUp, user, isAdmin, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   // Redirect if already logged in as admin
-  if (!authLoading && user && isAdmin) {
-    navigate("/admin");
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && user && isAdmin) {
+      navigate("/admin");
+    }
+  }, [authLoading, user, isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    const { error } = await signIn(email, password);
-
-    if (error) {
+    
+    // Validate admin email
+    if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
       toast({
-        title: "Login Failed",
-        description: error.message || "Invalid email or password.",
+        title: "Access Denied",
+        description: "Only the admin email is allowed to access this page.",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
 
-    // Check if the user has admin role after login
-    toast({
-      title: "Checking admin access...",
-      description: "Verifying your permissions.",
-    });
+    setIsLoading(true);
 
-    // Small delay to allow role check to complete
-    setTimeout(() => {
+    if (isSignUp) {
+      // Sign up flow
+      const { error } = await signUp(email, password, fullName);
+      if (error) {
+        toast({
+          title: "Sign Up Failed",
+          description: error.message || "Could not create account.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      toast({
+        title: "Account Created!",
+        description: "Admin account has been created. Please sign in.",
+      });
+      setIsSignUp(false);
       setIsLoading(false);
-    }, 1500);
+    } else {
+      // Sign in flow
+      const { error } = await signIn(email, password);
+
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message || "Invalid email or password.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      toast({
+        title: "Checking admin access...",
+        description: "Verifying your permissions.",
+      });
+
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
@@ -62,7 +106,9 @@ export default function AdminLogin() {
           <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-glow">
             <ShoppingBag className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Admin Login</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isSignUp ? "Create Admin Account" : "Admin Login"}
+          </h1>
           <div className="flex items-center gap-2 mt-2">
             <Shield className="w-4 h-4 text-primary" />
             <p className="text-muted-foreground text-sm">Secure admin access</p>
@@ -77,6 +123,20 @@ export default function AdminLogin() {
           onSubmit={handleSubmit}
           className="space-y-4 bg-card p-8 rounded-2xl shadow-lg border border-border"
         >
+          {isSignUp && (
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="h-14 pl-12 rounded-xl bg-secondary border-0"
+                required
+              />
+            </div>
+          )}
+
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -120,14 +180,26 @@ export default function AdminLogin() {
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Signing in...
+                {isSignUp ? "Creating account..." : "Signing in..."}
               </>
             ) : (
-              "Sign In to Dashboard"
+              isSignUp ? "Create Admin Account" : "Sign In to Dashboard"
             )}
           </Button>
 
-          <div className="text-center pt-4">
+          {/* Toggle Sign Up / Sign In */}
+          <p className="text-center text-muted-foreground text-sm pt-2">
+            {isSignUp ? "Already have an account? " : "Need to create admin account? "}
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-primary font-medium hover:underline"
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
+
+          <div className="text-center pt-2">
             <button
               type="button"
               onClick={() => navigate("/home")}
@@ -146,8 +218,8 @@ export default function AdminLogin() {
           className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/20"
         >
           <p className="text-sm text-center text-muted-foreground">
-            <strong className="text-foreground">Need an admin account?</strong><br />
-            Contact the system administrator to get admin access.
+            <strong className="text-foreground">Admin Email:</strong><br />
+            {ADMIN_EMAIL}
           </p>
         </motion.div>
       </motion.div>
