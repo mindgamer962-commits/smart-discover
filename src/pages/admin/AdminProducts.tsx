@@ -381,7 +381,7 @@ export default function AdminProducts() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999] bg-popover">
                     {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -410,6 +410,16 @@ export default function AdminProducts() {
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 placeholder="https://example.com/image.jpg"
               />
+              {formData.image_url && (
+                <div className="mt-2">
+                  <img
+                    src={formData.image_url}
+                    alt="Preview"
+                    className="w-20 h-20 object-cover rounded-lg border border-border"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -435,12 +445,13 @@ export default function AdminProducts() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="discount_percent">Discount %</Label>
+                <Label htmlFor="discount_percent">Discount</Label>
                 <Input
                   id="discount_percent"
-                  type="number"
+                  type="text"
                   value={formData.discount_percent}
                   onChange={(e) => setFormData({ ...formData, discount_percent: e.target.value })}
+                  placeholder="e.g. up to 10%"
                 />
               </div>
             </div>
