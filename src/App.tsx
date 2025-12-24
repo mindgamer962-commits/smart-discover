@@ -8,6 +8,7 @@ import { AdminRoute } from "@/components/auth/AdminRoute";
 import SplashScreen from "./pages/SplashScreen";
 import HomePage from "./pages/HomePage";
 import CategoriesPage from "./pages/CategoriesPage";
+import CategoryProductsPage from "./pages/CategoryProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import WishlistPage from "./pages/WishlistPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -34,7 +35,7 @@ const App = () => (
             <Route path="/" element={<SplashScreen />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/categories/:id" element={<CategoriesPage />} />
+            <Route path="/category/:id" element={<CategoryProductsPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/profile" element={<ProfilePage />} />
