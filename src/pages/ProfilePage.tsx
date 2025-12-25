@@ -13,7 +13,8 @@ import {
   ChevronRight, 
   LogOut,
   Shield,
-  LogIn
+  LogIn,
+  Loader2
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +23,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { wishlist } = useWishlist();
   const { theme, toggleTheme } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const menuItems = [
@@ -39,6 +40,17 @@ export default function ProfilePage() {
     });
     navigate("/home");
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <MobileLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </MobileLayout>
+    );
+  }
 
   return (
     <MobileLayout>
