@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { motion } from "framer-motion";
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,23 @@ import {
   BookOpen,
   Gamepad2,
   Car,
-  Package
+  Package,
+  Laptop,
+  Watch,
+  Camera,
+  Headphones,
+  Gift,
+  ShoppingBag,
+  Heart,
+  Star,
+  Music,
+  Utensils,
+  Baby,
+  Dog,
+  Flower2,
+  Palette,
+  Wrench,
+  Briefcase
 } from "lucide-react";
 import {
   Dialog,
@@ -26,17 +42,39 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
-const categoryIcons: Record<string, any> = {
-  electronics: Smartphone,
-  fashion: Shirt,
-  beauty: Sparkles,
-  home: HomeIcon,
-  sports: Dumbbell,
-  books: BookOpen,
-  toys: Gamepad2,
-  automotive: Car,
-};
+// Available icons for categories
+const AVAILABLE_ICONS = [
+  { key: "electronics", icon: Smartphone, label: "Electronics" },
+  { key: "fashion", icon: Shirt, label: "Fashion" },
+  { key: "beauty", icon: Sparkles, label: "Beauty" },
+  { key: "home", icon: HomeIcon, label: "Home" },
+  { key: "sports", icon: Dumbbell, label: "Sports" },
+  { key: "books", icon: BookOpen, label: "Books" },
+  { key: "toys", icon: Gamepad2, label: "Toys & Games" },
+  { key: "automotive", icon: Car, label: "Automotive" },
+  { key: "laptop", icon: Laptop, label: "Laptops" },
+  { key: "watch", icon: Watch, label: "Watches" },
+  { key: "camera", icon: Camera, label: "Camera" },
+  { key: "headphones", icon: Headphones, label: "Audio" },
+  { key: "gift", icon: Gift, label: "Gifts" },
+  { key: "shopping", icon: ShoppingBag, label: "Shopping" },
+  { key: "health", icon: Heart, label: "Health" },
+  { key: "premium", icon: Star, label: "Premium" },
+  { key: "music", icon: Music, label: "Music" },
+  { key: "food", icon: Utensils, label: "Food" },
+  { key: "baby", icon: Baby, label: "Baby" },
+  { key: "pets", icon: Dog, label: "Pets" },
+  { key: "garden", icon: Flower2, label: "Garden" },
+  { key: "art", icon: Palette, label: "Art & Craft" },
+  { key: "tools", icon: Wrench, label: "Tools" },
+  { key: "office", icon: Briefcase, label: "Office" },
+];
+
+const categoryIcons: Record<string, any> = Object.fromEntries(
+  AVAILABLE_ICONS.map((item) => [item.key, item.icon])
+);
 
 export default function AdminCategories() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -212,6 +250,9 @@ export default function AdminCategories() {
                   </div>
 
                   <h3 className="font-semibold text-foreground mb-1">{category.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Icon: <span className="text-primary">{category.icon || "default"}</span>
+                  </p>
                   <p className="text-sm text-muted-foreground mb-4">
                     {category.productCount} products
                   </p>
@@ -225,7 +266,11 @@ export default function AdminCategories() {
                       variant="outline" 
                       size="icon" 
                       className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => deleteCategoryMutation.mutate(category.id)}
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete this category?")) {
+                          deleteCategoryMutation.mutate(category.id);
+                        }
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -239,7 +284,7 @@ export default function AdminCategories() {
 
       {/* Add/Edit Category Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
           </DialogHeader>
@@ -254,18 +299,66 @@ export default function AdminCategories() {
                 required
               />
             </div>
+
+            {/* Icon Selector */}
             <div className="space-y-2">
-              <Label htmlFor="icon">Icon Key</Label>
+              <Label>Select Icon (optional)</Label>
+              <div className="grid grid-cols-6 gap-2 p-3 bg-secondary/50 rounded-xl max-h-48 overflow-y-auto">
+                {AVAILABLE_ICONS.map((item) => {
+                  const isSelected = categoryIcon.toLowerCase() === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setCategoryIcon(item.key)}
+                      className={cn(
+                        "relative flex flex-col items-center justify-center p-2 rounded-lg transition-all",
+                        isSelected
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
+                          : "bg-card hover:bg-primary/10 text-muted-foreground hover:text-foreground"
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      {isSelected && (
+                        <Check className="absolute -top-1 -right-1 w-4 h-4 text-primary-foreground bg-primary rounded-full p-0.5" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Selected: <span className="text-primary font-medium">{categoryIcon || "None"}</span>
+              </p>
+            </div>
+
+            {/* Manual Icon Key Input */}
+            <div className="space-y-2">
+              <Label htmlFor="icon">Or type icon key manually</Label>
               <Input
                 id="icon"
                 value={categoryIcon}
                 onChange={(e) => setCategoryIcon(e.target.value)}
                 placeholder="e.g., electronics, fashion, beauty"
               />
-              <p className="text-xs text-muted-foreground">
-                Available: electronics, fashion, beauty, home, sports, books, toys, automotive
-              </p>
             </div>
+
+            {/* Icon Preview */}
+            {categoryIcon && (
+              <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  {(() => {
+                    const Icon = categoryIcons[categoryIcon.toLowerCase()] || Package;
+                    return <Icon className="w-6 h-6 text-primary" />;
+                  })()}
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{categoryName || "Category Name"}</p>
+                  <p className="text-sm text-muted-foreground">Preview of your category</p>
+                </div>
+              </div>
+            )}
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closeDialog}>
                 Cancel
