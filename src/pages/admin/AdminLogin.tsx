@@ -76,13 +76,15 @@ export default function AdminLogin() {
       }
 
       toast({
-        title: "Checking admin access...",
-        description: "Verifying your permissions.",
+        title: "Login Successful!",
+        description: "Redirecting to admin dashboard...",
       });
 
+      // Navigate directly to admin dashboard after successful login
       setTimeout(() => {
         setIsLoading(false);
-      }, 1500);
+        navigate("/admin");
+      }, 500);
     }
   };
 

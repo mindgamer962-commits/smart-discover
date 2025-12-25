@@ -21,7 +21,8 @@ import {
   Gamepad2,
   Car,
   ChevronRight,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react";
 
 const categoryIcons: Record<string, any> = {
@@ -140,6 +141,12 @@ export default function HomePage() {
               {user ? `Welcome back!` : "Find the best deals"}
             </p>
           </div>
+          <button 
+            onClick={() => navigate(user ? "/profile" : "/login")}
+            className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+          >
+            <User className="w-5 h-5 text-primary" />
+          </button>
         </motion.div>
 
         {/* Search Bar */}
