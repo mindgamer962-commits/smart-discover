@@ -120,7 +120,8 @@ export type Database = {
           is_active: boolean
           is_featured: boolean
           original_price: number | null
-          price: number
+          price: number | null
+          price_label: string | null
           rating: number | null
           title: string
           updated_at: string
@@ -138,7 +139,8 @@ export type Database = {
           is_active?: boolean
           is_featured?: boolean
           original_price?: number | null
-          price: number
+          price?: number | null
+          price_label?: string | null
           rating?: number | null
           title: string
           updated_at?: string
@@ -156,7 +158,8 @@ export type Database = {
           is_active?: boolean
           is_featured?: boolean
           original_price?: number | null
-          price?: number
+          price?: number | null
+          price_label?: string | null
           rating?: number | null
           title?: string
           updated_at?: string
