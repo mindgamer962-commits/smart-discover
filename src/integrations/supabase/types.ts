@@ -125,6 +125,7 @@ export type Database = {
           price: number | null
           price_label: string | null
           rating: number | null
+          search_keywords: string | null
           title: string
           updated_at: string
         }
@@ -146,6 +147,7 @@ export type Database = {
           price?: number | null
           price_label?: string | null
           rating?: number | null
+          search_keywords?: string | null
           title: string
           updated_at?: string
         }
@@ -167,6 +169,7 @@ export type Database = {
           price?: number | null
           price_label?: string | null
           rating?: number | null
+          search_keywords?: string | null
           title?: string
           updated_at?: string
         }
