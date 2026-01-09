@@ -118,7 +118,9 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          is_big_discount: boolean | null
           is_featured: boolean
+          is_highlighted: boolean | null
           original_price: number | null
           price: number | null
           price_label: string | null
@@ -137,7 +139,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_big_discount?: boolean | null
           is_featured?: boolean
+          is_highlighted?: boolean | null
           original_price?: number | null
           price?: number | null
           price_label?: string | null
@@ -156,7 +160,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_big_discount?: boolean | null
           is_featured?: boolean
+          is_highlighted?: boolean | null
           original_price?: number | null
           price?: number | null
           price_label?: string | null
